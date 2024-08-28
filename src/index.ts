@@ -6,7 +6,11 @@ const app = express();
 config();
 
 // Configura CORS para permitir solicitudes desde cualquier origen
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 //middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
