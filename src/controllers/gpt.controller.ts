@@ -132,3 +132,112 @@ export const chatCompletionHandler = async (req, res) => {
       .json({ error: "Ocurrió un error al procesar la solicitud." });
   }
 };
+
+export const createGroup = async (req, res) => {
+  try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_KEY,
+    });
+    //Recibir datos desde el frontend
+    const { course_id, members, name_subject } = req.body;
+
+    //Consulta para obtener los estudiantes y sus resultados de personalidad
+    const studentsResult = await pool.query(
+      "select u.user_id, u.names || ' ' || u.last_names AS full_name , as2.answers  from users u inner join courses c on u.course_id=c.course_id inner join answers_surveys as2 on u.user_id=as2.student_id where u.user_type='estudiante' and u.course_id = $1",
+      [course_id]
+    );
+    const students = studentsResult.rows;
+
+    // Mapeo para obtener un objeto con ID como clave y nombre completo como valor
+    const studentMap = students.reduce((map, student) => {
+      map[student.user_id] = student.full_name;
+      return map;
+    }, {});
+
+    // Preparar la lista de estudiantes con sus respuestas para enviar a GPT
+    const studentDetails = students.map((student) => ({
+      id: student.user_id,
+      answers: student.answers,
+    }));
+
+    const gptMessage = `
+      Quiero conformar grupos de ${members} estudiantes pero si llega a existir ungrupo con un sólo integrante elimina ese grupo y anexa ese integrante al grupo anterior sin importar que exceda el números de miembros especificado inicalmente. NINGÚN ESTUDIANTE PUEDE QUEDAR SÓLO, ESTO ESTÁ PROHIBIDO: "grupo 4": "9" (significa que un estudiante es un sólo grupo y eso es ilógico)
+      dame los grupos de trabajo según la mejor combinación de sus personalidades, quiero que la respuesta venga así por ejemplo: {"grupo 1": "1,4",(deben ir los id de estudiantes que conformaran el grupo)"grupo 2":"5,7"}, sus personalidades son las siguientes: ${JSON.stringify(
+        studentDetails
+      )}
+    `;
+
+    const chat = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "Eres un asistente en psicología, el texto que me retornes debe estar en texto plano no markdown",
+        },
+        { role: "user", content: gptMessage },
+      ],
+      model: "gpt-4o-mini",
+    });
+
+    const responseContent = chat.choices[0].message.content;
+    console.log(responseContent);
+    // Convertir la respuesta de GPT en un objeto JSON
+    let grupos = JSON.parse(responseContent);
+
+    // Verificar y ajustar los grupos antes de enviarlos al cliente
+    grupos = adjustGroups(grupos);
+
+    const gruposConNombres = Object.keys(grupos).reduce(
+      (acc: Record<string, string>, groupName: string) => {
+        const ids = grupos[groupName].split(",").map((id) => id.trim());
+        const nombres = ids.map((id) => studentMap[parseInt(id, 10)]).join(",");
+        acc[groupName] = nombres;
+        return acc;
+      },
+      {}
+    );
+
+    res.json({ mensaje: "Grupos creados", gruposConNombres });
+  } catch (err) {
+    console.log(err);
+    res
+      .status(500)
+      .json({ error: "Ocurrió un error al procesar la solicitud." });
+  }
+};
+
+const adjustGroups = (
+  grupos: Record<string, string>
+): Record<string, string> => {
+  const groupEntries = Object.entries(grupos);
+  const modifiedGroups: Record<string, string> = {};
+  let singleStudent: string | null = null;
+
+  // Recorremos los grupos para identificar y gestionar grupos con un solo estudiante
+  groupEntries.forEach(([groupName, group]) => {
+    // Aseguramos que group sea una cadena de texto
+    if (typeof group === "string") {
+      const studentIds = group.split(",").map((id) => id.trim());
+      if (studentIds.length === 1) {
+        singleStudent = studentIds[0];
+      } else {
+        modifiedGroups[groupName] = group;
+      }
+    }
+  });
+
+  // Si hay un estudiante solitario, lo redistribuimos
+  if (singleStudent) {
+    // Encontrar un grupo al que agregar al estudiante solitario
+    const nonEmptyGroups = Object.keys(modifiedGroups);
+    if (nonEmptyGroups.length > 0) {
+      // Agregar el estudiante solitario al primer grupo no vacío
+      const firstGroupName = nonEmptyGroups[0];
+      modifiedGroups[
+        firstGroupName
+      ] = `${modifiedGroups[firstGroupName]},${singleStudent}`;
+    }
+  }
+
+  return modifiedGroups;
+};
