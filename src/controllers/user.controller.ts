@@ -43,3 +43,19 @@ export const createUser = async (req, res) => {
       .json({ error: "Ocurrió un error al procesar la solicitud." });
   }
 };
+
+export const getInfoGroups = async (req, res) => {
+  const { student_id } = req.body;
+  try {
+    const response = await pool.query(
+      "SELECT COUNT(g.group_id) AS number_of_groups, STRING_AGG(g.group_name, ', ') AS group_names FROM groups g JOIN group_members gm ON g.group_id = gm.group_id WHERE gm.student_id = $1 GROUP BY gm.student_id;",
+      [student_id]
+    );
+    res.status(200).json(response.rows);
+  } catch (err) {
+    console.log(err);
+    res
+      .status(500)
+      .json({ error: "Ocurrió un error al procesar la solicitud." });
+  }
+};
