@@ -9,7 +9,11 @@ import {
   createUser,
   getInfoGroups,
 } from "../controllers/user.controller";
-import { getGroups, getListStudents } from "../controllers/group.controller";
+import {
+  getGroups,
+  getListStudents,
+  saveGroup,
+} from "../controllers/group.controller";
 
 const router = Router();
 
@@ -21,5 +25,6 @@ router.post("/api/createGroups", createGroup);
 router.get("/api/groups", getGroups); //Listado de grupos
 router.get("/api/listStudents", getListStudents); //Listado de estudiantes (especificar luego de qué curso)
 router.post("/api/infoGroups", getInfoGroups); //Info de grupos por estudiante
+router.post("/api/saveGroups", saveGroup); //guardar grupos de estudiantes
 
 export default router;

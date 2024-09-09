@@ -13,3 +13,52 @@ export const getListStudents = async (req, res) => {
   );
   res.status(200).json(response.rows);
 };
+interface GroupData {
+  subject_id: number;
+  created_teacher: number;
+  creation_date: string;
+  gruposConNombresID: Record<string, string>;
+}
+export const saveGroup = async (req, res) => {
+  try {
+    const {
+      subject_id,
+      created_teacher,
+      creation_date,
+      gruposConNombresID,
+    }: GroupData = req.body;
+
+    const groupEntries: { groupId: number; studentIds: string[] }[] = [];
+    for (const [groupName, studentIds] of Object.entries(gruposConNombresID)) {
+      if (typeof studentIds !== "string") {
+        throw new Error("Invalid student IDs format for group" + groupName);
+      }
+      const result = await pool.query(
+        "INSERT INTO groups (subject_id, created_teacher, group_name, creation_date) VALUES ($1, $2, $3, $4) RETURNING group_id",
+        [subject_id, created_teacher, groupName, creation_date]
+      );
+      const groupId = result.rows[0].group_id;
+
+      groupEntries.push({
+        groupId,
+        studentIds: studentIds.split(",").map((id) => id.trim()),
+      });
+    }
+
+    for (const { groupId, studentIds } of groupEntries) {
+      for (const studentId of studentIds) {
+        await pool.query(
+          "INSERT INTO group_members (student_id, group_id) VALUES ($1, $2)",
+          [studentId, groupId]
+        );
+      }
+    }
+
+    res.json({ mensaje: "Grupos y miembros registrados con éxito" });
+  } catch (err) {
+    console.log(err);
+    res
+      .status(500)
+      .json({ error: "Ocurrió un error al procesar la solicitud." });
+  }
+};

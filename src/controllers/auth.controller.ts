@@ -8,11 +8,9 @@ export const loginHandler = async (req, res) => {
     [email, password]
   );
   if (response.rows.length > 0) {
-    const user = response.rows[0];
-    res.json({ message: "Autenticado", user });
+    const { password, ...userWithoutPassword } = response.rows[0];
+    res.json({ message: "Autenticado", user: userWithoutPassword });
   } else {
     res.status(401).json({ message: "Invalid email or password" });
   }
-  //console.log(response);
-  //res.send("Autenticado");
 };

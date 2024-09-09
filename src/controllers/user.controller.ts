@@ -18,23 +18,32 @@ export const createUser = async (req, res) => {
       user_type,
       course_id,
     } = req.body;
-    if (user_type === "estudiante") {
-      await pool.query(
-        "INSERT INTO users(names, last_names, email, username, password, user_type, course_id) VALUES ($1, $2, $3, $4, $5, $6, 1)",
-        [names, last_names, email, username, password, user_type]
-      );
-      res.json({ mensaje: "Estudiante registrado" });
+    //comprobar si existe correo ingresado
+    const emailExists = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+    if (emailExists.rows.length > 0) {
+      res.json({ message: "Este correo ya se encuentra registrado" });
     } else {
-      const response = await pool.query(
-        "INSERT INTO users(names, last_names, email, username, password, user_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id",
-        [names, last_names, email, username, password, user_type]
-      );
-      const teacher_id = response.rows[0].user_id;
-      await pool.query(
-        "INSERT INTO teacher_subject_course(teacher_id, subject_id, course_id) VALUES ($1, 1, 1);",
-        [teacher_id]
-      );
-      res.json({ mensaje: "Profesor registrado" });
+      if (user_type === "estudiante") {
+        await pool.query(
+          "INSERT INTO users(names, last_names, email, username, password, user_type, course_id) VALUES ($1, $2, $3, $4, $5, $6, 1)",
+          [names, last_names, email, username, password, user_type]
+        );
+        res.json({ mensaje: "Estudiante registrado" });
+      } else {
+        const response = await pool.query(
+          "INSERT INTO users(names, last_names, email, username, password, user_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING user_id",
+          [names, last_names, email, username, password, user_type]
+        );
+        const teacher_id = response.rows[0].user_id;
+        await pool.query(
+          "INSERT INTO teacher_subject_course(teacher_id, subject_id, course_id) VALUES ($1, 1, 1);",
+          [teacher_id]
+        );
+        res.json({ mensaje: "Profesor registrado" });
+      }
     }
   } catch (err) {
     console.log(err);

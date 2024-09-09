@@ -187,17 +187,25 @@ export const createGroup = async (req, res) => {
     // Verificar y ajustar los grupos antes de enviarlos al cliente
     grupos = adjustGroups(grupos);
 
-    const gruposConNombres = Object.keys(grupos).reduce(
-      (acc: Record<string, string>, groupName: string) => {
-        const ids = grupos[groupName].split(",").map((id) => id.trim());
-        const nombres = ids.map((id) => studentMap[parseInt(id, 10)]).join(",");
-        acc[groupName] = nombres;
-        return acc;
-      },
-      {}
-    );
+    // Crear dos objetos: uno para nombres y otro para IDs
+    const gruposConNombres = {};
+    const gruposConNombresID = {};
 
-    res.json({ mensaje: "Grupos creados", gruposConNombres });
+    Object.keys(grupos).forEach((groupName) => {
+      const ids = grupos[groupName].split(",").map((id) => id.trim());
+      const nombres = ids.map((id) => studentMap[parseInt(id, 10)]).join(", ");
+
+      // Guardar los nombres y los IDs por separado
+      gruposConNombres[groupName] = nombres;
+      gruposConNombresID[groupName] = ids.join(", ");
+    });
+
+    // Enviar ambos objetos en la respuesta
+    res.json({
+      mensaje: "Grupos creados",
+      gruposConNombres,
+      gruposConNombresID,
+    });
   } catch (err) {
     console.log(err);
     res
