@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20 # Elige la versión de Node.js que usas en tu proyecto.
+    commands:
+      - echo Installing source NPM dependencies...
+      - npm install # Instala las dependencias de Node.js definidas en package.json.
+
+  build:
+    commands:
+      - echo Building TypeScript project...
+      - npm run build # Asume que tienes un script "build" en package.json que compila TypeScript.
+
+artifacts:
+  files:
+    - "**/*" # Incluye todos los archivos generados, como los archivos .js generados.
+  discard-paths: yes # Para mantener solo los archivos y no las carpetas.
