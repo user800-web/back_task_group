@@ -6,15 +6,12 @@ phases:
       nodejs: 20
     commands:
       - echo "Instalando dependencias..."
-      - npm install typescript --save-dev  # Instala TypeScript como dependencia de desarrollo
-      - npm ci  # Instala las dependencias del proyecto
-  pre_build:
-    commands:
-      - echo "Preparando la construcción..."
+      - npm ci # Primero instala todo desde package-lock.json
+      - npm install typescript --save-dev # Luego agrega TypeScript
   build:
     commands:
       - echo "Compilando TypeScript..."
-      - npm run build  # Ejecuta el script de construcción definido en package.json
+      - npm run build
   post_build:
     commands:
       - echo "Construcción completada"
