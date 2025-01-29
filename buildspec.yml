@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 20  # Usa la versión de Node.js que necesites
+      nodejs: 20
     commands:
       - echo "Instalando dependencias..."
       - npm install typescript --save-dev  # Instala TypeScript como dependencia de desarrollo
@@ -11,7 +11,6 @@ phases:
   pre_build:
     commands:
       - echo "Preparando la construcción..."
-      - npx tsc -v  # Verifica que tsc esté disponible
   build:
     commands:
       - echo "Compilando TypeScript..."
@@ -21,5 +20,5 @@ phases:
       - echo "Construcción completada"
 artifacts:
   files:
-    - "**/*"  # Incluye todos los archivos generados
-  discard-paths: yes  # Descarta las rutas y solo incluye los archivos
+    - "**/*"
+  discard-paths: yes
