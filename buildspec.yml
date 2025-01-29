@@ -7,7 +7,7 @@ phases:
     commands:
       - echo "Installing dependencies"
       - npm install -g typescript
-      - npm install --legacy-peer-deps  # Esto instalará todas las dependencias, incluidas las de desarrollo.
+      - npm ci
   pre_build:
     commands:
       - echo "Preparing build"
