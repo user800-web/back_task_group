@@ -6,6 +6,7 @@ phases:
       nodejs: 20 # Elige la versión de Node.js que usas en tu proyecto.
     commands:
       - echo "Installing dependencies"
+      - npm install -g typescript
       - npm install --legacy-peer-deps  # Esto instalará todas las dependencias, incluidas las de desarrollo.
   pre_build:
     commands:
